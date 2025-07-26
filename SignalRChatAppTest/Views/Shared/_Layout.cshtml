@@ -1,0 +1,73 @@
+﻿@using System.Text.Json
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ChatApp</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chat.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Chat" asp-action="Index">ChatApp</a>
+                <div class="collapse navbar-collapse">
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="container mt-4">
+        @RenderBody()
+    </main>
+
+    <!-- Toast Container -->
+    <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+        <div id="appToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastBody"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const type = @Html.Raw(JsonSerializer.Serialize(TempData["ToastType"]));
+            const message = @Html.Raw(JsonSerializer.Serialize(TempData["ToastMessage"]));
+
+            if (message) {
+                const toastEl = document.getElementById('appToast');
+                const toastBody = document.getElementById('toastBody');
+
+                let bgClass = 'bg-primary';
+                if (type === 'success') bgClass = 'bg-success';
+                else if (type === 'error') bgClass = 'bg-danger';
+                else if (type === 'warning') bgClass = 'bg-warning text-dark';
+
+                toastEl.classList.remove('bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'text-dark');
+                toastEl.classList.add(bgClass);
+                toastBody.textContent = message;
+
+                const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                toast.show();
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

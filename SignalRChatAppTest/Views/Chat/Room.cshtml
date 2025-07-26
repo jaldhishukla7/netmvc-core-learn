@@ -1,0 +1,82 @@
+﻿<!-- Views/Chat/Room.cshtml -->
+@model SignalRChatAppTest.Models.ChatRoom
+@{
+    var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var otherParticipants = Model.Participants.Where(p => p.UserId != currentUserId).ToList();
+    var displayName = Model.IsGroup ? Model.Name :
+        (otherParticipants.Any() ? $"{otherParticipants.First().User.FirstName} {otherParticipants.First().User.LastName}" : "Private Chat");
+    ViewData["Title"] = "Chat - " + displayName;
+}
+
+<div class="container-fluid chat-container">
+    <div class="row h-100">
+        <!-- Sidebar with Chat List -->
+        <div class="col-md-4 col-lg-3 sidebar">
+            <div class="sidebar-header">
+                <a href="/Chat" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    <i class="fas fa-plus"></i> New Chat
+                </button>
+            </div>
+            <!-- Include chat list here similar to Index view -->
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="col-md-8 col-lg-9 main-chat">
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <h5>@displayName</h5>
+                    @if (!Model.IsGroup && otherParticipants.Any())
+                    {
+                        <small class="text-muted">
+                            <span class="online-status @(otherParticipants.First().User.IsOnline ? "online" : "offline")"></span>
+                            @(otherParticipants.First().User.IsOnline ? "Online" :
+                                                    (otherParticipants.First().User.LastSeen.HasValue ? "Last seen " + otherParticipants.First().User.LastSeen.Value.ToString("HH:mm") : "Offline"))
+                    </small>
+                                        }
+                    else if (Model.IsGroup)
+                    {
+                        <small class="text-muted">@Model.Participants.Count members</small>
+                    }
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                @foreach (var message in Model.Messages)
+                {
+                    <div class="message @(message.SenderId == currentUserId ? "sent" : "received")">
+                        <div class="message-content">
+                            @if (message.SenderId != currentUserId)
+                            {
+                                <div class="message-sender">@message.Sender.FirstName @message.Sender.LastName</div>
+                            }
+                            <div class="message-text">@message.Content</div>
+                            <div class="message-time">@message.SentAt.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                <span id="typingText">Someone is typing...</span>
+            </div>
+
+            <div class="message-input-container">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="messageInput"
+                           placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-primary" type="button" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatRoomId = @Model.Id;
+    const currentUserId = '@currentUserId';
+</script>

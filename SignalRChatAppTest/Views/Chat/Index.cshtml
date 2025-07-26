@@ -1,0 +1,121 @@
+﻿<!-- Views/Chat/Index.cshtml -->
+@model SignalRChatAppTest.ViewModels.ChatIndexViewModel
+@{
+    ViewData["Title"] = "Chat - Hello, " + Model.CurrentUser.FirstName;
+}
+
+<div class="container-fluid chat-container">
+    <div class="row h-100">
+        <!-- Sidebar with Chat List -->
+        <div class="col-md-4 col-lg-3 sidebar">
+            <div class="sidebar-header">
+                <h4>Hello, @Model.CurrentUser.FirstName!</h4>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    <i class="fas fa-plus"></i> New Chat
+                </button>
+            </div>
+
+            <div class="chat-list">
+                @if (Model.ChatRooms.Any())
+                {
+                    @foreach (var room in Model.ChatRooms)
+                    {
+                        var otherParticipants = room.Participants.Where(p => p.UserId != Model.CurrentUser.Id).ToList();
+                        var displayName = room.IsGroup ? room.Name :
+                        (otherParticipants.Any() ? $"{otherParticipants.First().User.FirstName} {otherParticipants.First().User.LastName}" : "Private Chat");
+                        var lastMessage = room.Messages.FirstOrDefault();
+
+                        <div class="chat-item @(ViewBag.CurrentRoomId == room.Id ? "active" : "")"
+                             onclick="openChat(@room.Id)">
+                            <div class="chat-avatar">
+                                @if (room.IsGroup)
+                                {
+                                    <i class="fas fa-users"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-user"></i>
+                                }
+                            </div>
+                            <div class="chat-info">
+                                <div class="chat-name">@displayName</div>
+                                @if (lastMessage != null)
+                                {
+                                    <div class="chat-last-message">
+                                        <small>@lastMessage.Sender.FirstName: @(lastMessage.Content.Length > 30 ? lastMessage.Content.Substring(0, 30) + "..." : lastMessage.Content)</small>
+                                    </div>
+                                }
+                                <div class="chat-time">
+                                    @if (lastMessage != null)
+                                    {
+                                        <small>@lastMessage.SentAt.ToString("HH:mm")</small>
+                                    }
+                                </div>
+                            </div>
+                            @if (!room.IsGroup && otherParticipants.Any())
+                            {
+                                <div class="online-status @(otherParticipants.First().User.IsOnline ? "online" : "offline")"></div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="no-chats">
+                        <p>No chats yet. Start a conversation!</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="col-md-8 col-lg-9 main-chat">
+            <div class="chat-welcome">
+                <div class="welcome-content">
+                    <h3>Welcome to your chat, @Model.CurrentUser.FirstName!</h3>
+                    <p>Select a chat from the sidebar or start a new conversation.</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                        Start New Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start New Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="chatType" class="form-label">Chat Type</label>
+                    <select class="form-select" id="chatType" onchange="toggleChatType()">
+                        <option value="private">Private Chat</option>
+                        <option value="group">Group Chat</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="groupNameDiv" style="display: none;">
+                    <label for="groupName" class="form-label">Group Name</label>
+                    <input type="text" class="form-control" id="groupName" placeholder="Enter group name">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Select Participants</label>
+                    <div id="usersList" class="users-list">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createChat()">Start Chat</button>
+            </div>
+        </div>
+    </div>
+</div>
